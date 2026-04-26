@@ -1,0 +1,6 @@
+@MS2.Mediciones_HostAddress = http://localhost:5161
+
+GET {{MS2.Mediciones_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

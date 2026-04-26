@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package invernadero.eventos.mediciones;
+
+option csharp_namespace = "Invernadero.Contracts.Mediciones";
+
+import "google/protobuf/timestamp.proto";
+
+message MedicionEvent {
+  string medicion_id       = 1; // UUID generado por MS1
+  string sensor_id         = 2;
+  string invernadero_id    = 3;
+  google.protobuf.Timestamp timestamp = 4;
+  float  temperatura       = 5; // 0 si el sensor no mide temperatura
+  float  humedad           = 6; // 0 si el sensor no mide humedad
+  string marca             = 7; // "MarcaA" | "MarcaB" | "MarcaC"
+}

@@ -1,0 +1,61 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# Rider / ReSharper
+_ReSharper*/
+*.DotSettings.user
+
+# Test results
+TestResults/
+coverage/
+*.trx
+*.coveragexml
+
+# Publish output
+publish/
+out/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment / secrets — NUNCA subir al repo
+.env
+.env.local
+.env.*.local
+appsettings.local.json
+appsettings.Development.json
+
+# Docker override local
+docker-compose.override.yml
+
+# JetBrains
+*.iml
+.idea/
+
+# VS Code
+.vscode/
+!.vscode/extensions.json
+
+# Protobuf generated (opcional: comentar si se quiere versionar)
+# **/obj/Debug/
+# **/obj/Release/

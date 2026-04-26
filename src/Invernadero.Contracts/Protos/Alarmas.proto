@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package invernadero.eventos.alarmas;
+
+option csharp_namespace = "Invernadero.Contracts.Alarmas";
+
+import "google/protobuf/timestamp.proto";
+
+enum TipoAlarma {
+  TEMPERATURA_ALTA = 0;
+  TEMPERATURA_BAJA = 1;
+  HUMEDAD_ALTA     = 2;
+  HUMEDAD_BAJA     = 3;
+}
+
+message AlarmaEvent {
+  string     alarma_id            = 1; // UUID generado por MS3
+  string     sensor_id            = 2;
+  string     invernadero_id       = 3;
+  TipoAlarma tipo                 = 4;
+  float      valor_medido         = 5;
+  float      umbral_configurado   = 6;
+  google.protobuf.Timestamp timestamp_disparada = 7;
+}

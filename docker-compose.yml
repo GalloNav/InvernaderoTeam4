@@ -1,0 +1,48 @@
+services:
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: invernadero-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - invernadero-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: invernadero-sqlserver
+    ports:
+      - "1435:1433"
+    environment:
+      SA_PASSWORD: "InvernaderoPwd2024"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Express"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - invernadero-net
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'InvernaderoPwd2024' -Q 'SELECT 1' -No || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 30s
+
+volumes:
+  rabbitmq-data:
+  sqlserver-data:
+
+networks:
+  invernadero-net:
+    driver: bridge
