@@ -49,9 +49,9 @@ try
             {
                 InvernaderoId = "INV-001",
                 TempMin = 15f,
-                TempMax = 30f,
+                TempMax = 32f,
                 HumMin  = 40f,
-                HumMax  = 85f
+                HumMax  = 88f
             });
             db.SaveChanges();
             Log.Information("Seed: umbral default INV-001 insertado");

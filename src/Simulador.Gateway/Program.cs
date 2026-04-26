@@ -4,7 +4,7 @@ using Serilog;
 
 var host       = "localhost";
 var port       = 6000;
-var intervalMs = 2000;
+var intervalMs = 5000;
 
 for (var i = 0; i < args.Length - 1; i++)
 {

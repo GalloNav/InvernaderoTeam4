@@ -137,9 +137,9 @@ public sealed class AlarmasSubscriber(
 
     private static string LogPrefix(string canal) => canal switch
     {
-        "Email" => "📧 [EMAIL]",
-        "SMS"   => "📱 [MOCK SMS]",
-        "Push"  => "🔔 [MOCK PUSH]",
+        "Email" => "[EMAIL]",
+        "SMS"   => "[MOCK SMS]",
+        "Push"  => "[MOCK PUSH]",
         _       => $"[{canal}]"
     };
 

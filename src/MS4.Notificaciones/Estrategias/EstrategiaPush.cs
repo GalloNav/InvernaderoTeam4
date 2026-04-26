@@ -10,7 +10,7 @@ public sealed class EstrategiaPush(ILogger<EstrategiaPush> logger) : INotificaci
     {
         await Task.Delay(100);
         logger.LogInformation(
-            "🔔 [MOCK PUSH] Token={Token}, mensaje: ALARMA {Tipo} sensor {SensorId}",
+            "[MOCK PUSH] Token={Token}, mensaje: ALARMA {Tipo} sensor {SensorId}",
             destinatario, alarma.Tipo, alarma.SensorId);
         return new ResultadoNotificacion(true);
     }

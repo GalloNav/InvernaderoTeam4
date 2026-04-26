@@ -10,7 +10,7 @@ public sealed class EstrategiaSMS(ILogger<EstrategiaSMS> logger) : INotificacion
     {
         await Task.Delay(100);
         logger.LogInformation(
-            "📱 [MOCK SMS] Para {Tel}, msg: ALARMA {Tipo} sensor {SensorId}",
+            "[MOCK SMS] Para {Tel}, msg: ALARMA {Tipo} sensor {SensorId}",
             destinatario, alarma.Tipo, alarma.SensorId);
         return new ResultadoNotificacion(true);
     }
