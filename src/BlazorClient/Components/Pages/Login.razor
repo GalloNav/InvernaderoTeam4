@@ -1,0 +1,64 @@
+@page "/login"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject IApiClient ApiClient
+@inject ProtectedSessionStorage SessionStorage
+@inject NavigationManager Nav
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Iniciar sesión</h5>
+            </div>
+            <div class="card-body">
+                <EditForm Model="_model" OnValidSubmit="HandleLogin" FormName="login">
+                    <DataAnnotationsValidator />
+                    <div class="mb-3">
+                        <label class="form-label">Usuario</label>
+                        <InputText class="form-control" @bind-Value="_model.Username" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contraseña</label>
+                        <InputText class="form-control" type="password" @bind-Value="_model.Password" />
+                    </div>
+                    @if (_error is not null)
+                    {
+                        <div class="alert alert-danger py-2">@_error</div>
+                    }
+                    <button type="submit" class="btn btn-success w-100" disabled="@_loading">
+                        @(_loading ? "Ingresando..." : "Ingresar")
+                    </button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginModel _model = new();
+    private string? _error;
+    private bool _loading;
+
+    private async Task HandleLogin()
+    {
+        _loading = true;
+        _error = null;
+
+        var result = await ApiClient.LoginAsync(_model.Username, _model.Password);
+        if (result is null)
+        {
+            _error = "Credenciales incorrectas.";
+            _loading = false;
+            return;
+        }
+
+        await SessionStorage.SetAsync("jwt_token", result.Token);
+        Nav.NavigateTo("/");
+    }
+
+    private sealed class LoginModel
+    {
+        public string Username { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+}
