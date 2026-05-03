@@ -21,7 +21,7 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
     .CreateLogger();
 
-Log.Information("Simulador arrancando → {Host}:{Port} (intervalo {Interval}ms)", host, port, intervalMs);
+Log.Information("Simulador arrancando -> {Host}:{Port} (intervalo {Interval}ms)", host, port, intervalMs);
 
 var rng = new Random();
 
@@ -63,7 +63,7 @@ while (true)
         var stream = tcp.GetStream();
         await stream.WriteAsync(frame);
         await stream.FlushAsync();
-        Log.Information("→ Enviado [{Label}] sensor={SensorId} T={Temp:F1} H={Hum:F1}",
+        Log.Information("-> Enviado [{Label}] sensor={SensorId} T={Temp:F1} H={Hum:F1}",
             label, sensorId, temp, hum);
     }
     catch (Exception ex)

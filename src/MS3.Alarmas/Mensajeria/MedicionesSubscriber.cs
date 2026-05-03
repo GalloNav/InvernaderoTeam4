@@ -63,7 +63,7 @@ public sealed class MedicionesSubscriber(
             _channel.QueueBind(queueName, exchangeMediciones, routingKey: string.Empty);
             _channel.BasicQos(prefetchSize: 0, prefetchCount: 10, global: false);
 
-            logger.LogInformation("RabbitMQ conectado — queue '{Queue}' ↔ exchange '{Exchange}'",
+            logger.LogInformation("RabbitMQ conectado — queue '{Queue}' <-> exchange '{Exchange}'",
                 queueName, exchangeMediciones);
             return true;
         }
@@ -98,7 +98,7 @@ public sealed class MedicionesSubscriber(
 
             if (disparadas.Count == 0)
             {
-                logger.LogInformation("→ Dentro de umbrales");
+                logger.LogInformation("-> Dentro de umbrales");
                 _channel!.BasicAck(args.DeliveryTag, multiple: false);
                 return;
             }
@@ -111,7 +111,7 @@ public sealed class MedicionesSubscriber(
                 var alarmaId = Guid.NewGuid();
 
                 logger.LogInformation(
-                    "🚨 ALARMA sensor={SensorId} tipo={Tipo} valor={Valor:F1} umbral={Umbral:F1}",
+                    "[ALARMA] sensor={SensorId} tipo={Tipo} valor={Valor:F1} umbral={Umbral:F1}",
                     evt.SensorId, tipo, valorMedido, umbralConfig);
 
                 var alarmaEvent = new AlarmaEvent

@@ -1,10 +1,9 @@
 namespace BlazorClient.Models;
 
 public record AlarmaDto(
-    Guid AlarmaId,
-    string SensorId,
-    string InvernaderoId,
-    string Tipo,
-    float Valor,
-    float Umbral,
+    string   SensorId,
+    string   InvernaderoId,
+    string   Tipo,
+    float    ValorMedido,
+    float    UmbralConfigurado,
     DateTime Timestamp);

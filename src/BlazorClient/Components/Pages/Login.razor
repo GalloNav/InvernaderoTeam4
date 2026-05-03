@@ -44,16 +44,26 @@
         _loading = true;
         _error = null;
 
-        var result = await ApiClient.LoginAsync(_model.Username, _model.Password);
-        if (result is null)
+        try
         {
-            _error = "Credenciales incorrectas.";
-            _loading = false;
-            return;
-        }
+            var result = await ApiClient.LoginAsync(_model.Username, _model.Password);
+            if (result is null)
+            {
+                _error = "Credenciales incorrectas.";
+                return;
+            }
 
-        await SessionStorage.SetAsync("jwt_token", result.Token);
-        Nav.NavigateTo("/");
+            await SessionStorage.SetAsync("jwt_token", result.Token);
+            Nav.NavigateTo("/", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Error al conectar con el servidor: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private sealed class LoginModel

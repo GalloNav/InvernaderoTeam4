@@ -97,7 +97,7 @@ public sealed class EventosSubscriber(
             );
 
             await hubContext.Clients.All.SendAsync("NuevaMedicion", dto);
-            logger.LogInformation("📡 SignalR push → NuevaMedicion sensor={SensorId}", dto.SensorId);
+            logger.LogInformation("[SIGNALR] push -> NuevaMedicion sensor={SensorId}", dto.SensorId);
         }
         catch (Exception ex)
         {
@@ -120,7 +120,7 @@ public sealed class EventosSubscriber(
             );
 
             await hubContext.Clients.All.SendAsync("NuevaAlarma", dto);
-            logger.LogInformation("📡 SignalR push → NuevaAlarma sensor={SensorId} tipo={Tipo}",
+            logger.LogInformation("[SIGNALR] push -> NuevaAlarma sensor={SensorId} tipo={Tipo}",
                 dto.SensorId, dto.Tipo);
         }
         catch (Exception ex)

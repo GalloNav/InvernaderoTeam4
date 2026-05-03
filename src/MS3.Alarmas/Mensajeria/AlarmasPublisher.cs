@@ -31,7 +31,7 @@ public sealed class AlarmasPublisher(
             _channel    = _connection.CreateModel();
             _channel.ExchangeDeclare(_exchange, ExchangeType.Fanout, durable: true, autoDelete: false);
 
-            logger.LogInformation("AlarmasPublisher conectado → exchange '{Exchange}'", _exchange);
+            logger.LogInformation("AlarmasPublisher conectado -> exchange '{Exchange}'", _exchange);
         }
     }
 

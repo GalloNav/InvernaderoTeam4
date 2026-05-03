@@ -37,7 +37,7 @@ public class MedicionesController(MedicionesDbContext db) : ControllerBase
         if (total == 0)
             return NotFound(new { mensaje = $"No hay mediciones para invernadero '{invernaderoId}'" });
 
-        // TODO: agregar filtro de rango de fechas cuando sea necesario
+        
         var avgTemp = await query.AverageAsync(m => (double)m.Temperatura);
         var avgHum  = await query.AverageAsync(m => (double)m.Humedad);
 

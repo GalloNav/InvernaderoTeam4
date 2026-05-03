@@ -60,7 +60,7 @@ public sealed class AlarmasSubscriber(
             _channel.QueueBind(queueName, exchangeAlarmas, routingKey: string.Empty);
             _channel.BasicQos(prefetchSize: 0, prefetchCount: 10, global: false);
 
-            logger.LogInformation("RabbitMQ conectado — queue '{Queue}' ↔ exchange '{Exchange}'",
+            logger.LogInformation("RabbitMQ conectado — queue '{Queue}' <-> exchange '{Exchange}'",
                 queueName, exchangeAlarmas);
             return true;
         }
@@ -77,7 +77,7 @@ public sealed class AlarmasSubscriber(
         {
             var alarma = AlarmaEvent.Parser.ParseFrom(args.Body.ToArray());
 
-            logger.LogInformation("📨 Procesando alarma {Tipo} sensor={SensorId}",
+            logger.LogInformation("[NOTIF] Procesando alarma {Tipo} sensor={SensorId}",
                 alarma.Tipo, alarma.SensorId);
 
             var email    = config["DestinatariosMock:Email"]     ?? "admin@invernadero.com";

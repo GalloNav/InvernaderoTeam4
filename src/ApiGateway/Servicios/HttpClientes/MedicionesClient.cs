@@ -1,27 +1,30 @@
+using ApiGateway.Servicios.Balanceador;
+
 namespace ApiGateway.Servicios.HttpClientes;
 
 public sealed class MedicionesClient(
-    HttpClient           http,
-    IHttpContextAccessor ctx,
+    HttpClient                http,
+    IHttpContextAccessor      ctx,
+    IRoundRobinBalanceador    balanceador,
     ILogger<MedicionesClient> logger) : IMedicionesClient
 {
     public async Task<string> GetAllAsync()
     {
-        logger.LogInformation("🔀 GW → MS2: GET /api/mediciones");
+        logger.LogInformation("[PROXY] GW -> MS2 [balanceado]: GET /api/mediciones");
         using var req = Get("/api/mediciones");
         return await Send(req);
     }
 
     public async Task<string> GetBySensorAsync(string sensorId)
     {
-        logger.LogInformation("🔀 GW → MS2: GET /api/mediciones/sensor/{Id}", sensorId);
+        logger.LogInformation("[PROXY] GW -> MS2 [balanceado]: GET /api/mediciones/sensor/{Id}", sensorId);
         using var req = Get($"/api/mediciones/sensor/{sensorId}");
         return await Send(req);
     }
 
     public async Task<string> GetPromedioAsync(string invernaderoId)
     {
-        logger.LogInformation("🔀 GW → MS2: GET /api/mediciones/promedio/{Id}", invernaderoId);
+        logger.LogInformation("[PROXY] GW -> MS2 [balanceado]: GET /api/mediciones/promedio/{Id}", invernaderoId);
         using var req = Get($"/api/mediciones/promedio/{invernaderoId}");
         return await Send(req);
     }
@@ -34,7 +37,8 @@ public sealed class MedicionesClient(
 
     private HttpRequestMessage Get(string path)
     {
-        var req = new HttpRequestMessage(HttpMethod.Get, path);
+        var baseUri = balanceador.ObtenerSiguiente("Mediciones");
+        var req = new HttpRequestMessage(HttpMethod.Get, new Uri(baseUri, path));
         PropagateAuth(req);
         return req;
     }

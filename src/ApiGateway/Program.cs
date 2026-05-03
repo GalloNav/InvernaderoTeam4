@@ -1,5 +1,6 @@
 using ApiGateway.Hubs;
 using ApiGateway.Mensajeria;
+using ApiGateway.Servicios.Balanceador;
 using ApiGateway.Servicios.HttpClientes;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -74,17 +75,16 @@ try
     // ── SignalR ───────────────────────────────────────────────────────────────
     builder.Services.AddSignalR();
 
+    // ── Balanceador round-robin (singleton: contador compartido entre llamadas) ─
+    builder.Services.AddSingleton<IRoundRobinBalanceador, RoundRobinBalanceador>();
+
     // ── HttpClients tipados ───────────────────────────────────────────────────
+    // Sin BaseAddress fijo: cada llamada resuelve la URL a través del balanceador.
     builder.Services.AddHttpContextAccessor();
 
-    builder.Services.AddHttpClient<IMedicionesClient, MedicionesClient>(c =>
-        c.BaseAddress = new Uri(cfg["ServiciosInternos:Mediciones"]!));
-
-    builder.Services.AddHttpClient<IAlarmasClient, AlarmasClient>(c =>
-        c.BaseAddress = new Uri(cfg["ServiciosInternos:Alarmas"]!));
-
-    builder.Services.AddHttpClient<ISensoresUsuariosClient, SensoresUsuariosClient>(c =>
-        c.BaseAddress = new Uri(cfg["ServiciosInternos:SensoresUsuarios"]!));
+    builder.Services.AddHttpClient<IMedicionesClient, MedicionesClient>();
+    builder.Services.AddHttpClient<IAlarmasClient, AlarmasClient>();
+    builder.Services.AddHttpClient<ISensoresUsuariosClient, SensoresUsuariosClient>();
 
     // ── Suscriptor de eventos (Protobuf → SignalR) ────────────────────────────
     builder.Services.AddHostedService<EventosSubscriber>();
