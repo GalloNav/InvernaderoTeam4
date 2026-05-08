@@ -1,4 +1,12 @@
-<div class="d-flex gap-3">
+<div class="d-flex gap-3 align-items-center">
     <NavLink class="nav-link text-white" href="/" Match="NavLinkMatch.All">Dashboard</NavLink>
-    <NavLink class="nav-link text-white" href="/login">Login</NavLink>
+    <AuthorizeView>
+        <Authorized>
+            <span class="nav-link text-white-50">Hola, @context.User.Identity?.Name</span>
+            <a class="nav-link text-white" href="/logout">Cerrar sesión</a>
+        </Authorized>
+        <NotAuthorized>
+            <a class="nav-link text-white" href="/login">Iniciar sesión</a>
+        </NotAuthorized>
+    </AuthorizeView>
 </div>

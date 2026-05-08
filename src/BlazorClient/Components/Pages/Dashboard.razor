@@ -1,147 +1,135 @@
 @page "/"
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Authorize]
 @implements IAsyncDisposable
 @inject IApiClient ApiClient
-@inject ProtectedSessionStorage SessionStorage
+@inject IHttpContextAccessor HttpContextAccessor
 @inject NavigationManager Nav
+@using Microsoft.AspNetCore.Authentication
 
 <PageTitle>Dashboard — Invernadero IoT</PageTitle>
 
-@if (_token is null)
-{
-    <div class="d-flex justify-content-center mt-5">
-        <div class="spinner-border text-success" role="status">
-            <span class="visually-hidden">Cargando...</span>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Dashboard en tiempo real</h4>
+    <span class="badge @(_hubConectado ? "bg-success" : "bg-secondary")">
+        @(_hubConectado ? "● Conectado" : "● Desconectado")
+    </span>
+</div>
+
+<div class="row g-3">
+    <!-- Mediciones -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                Ultimas mediciones (@_mediciones.Count)
+            </div>
+            <div class="card-body p-0" style="max-height:480px;overflow-y:auto;">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>Sensor</th>
+                            <th>Inv.</th>
+                            <th>Temp (°C)</th>
+                            <th>Hum (%)</th>
+                            <th>Hora</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in _mediciones)
+                        {
+                            <tr>
+                                <td>@m.SensorId</td>
+                                <td>@m.InvernaderoId</td>
+                                <td>@m.Temperatura.ToString("F1")</td>
+                                <td>@m.Humedad.ToString("F1")</td>
+                                <td>@m.Timestamp.ToLocalTime().ToString("HH:mm:ss")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-}
-else
-{
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">Dashboard en tiempo real</h4>
-        <span class="badge @(_hubConectado ? "bg-success" : "bg-secondary")">
-            @(_hubConectado ? "Conectado" : "Desconectado")
-        </span>
-    </div>
 
-    <div class="row g-3">
-        <!-- Mediciones -->
-        <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-header bg-success text-white">
-                    Ultimas mediciones (@_mediciones.Count)
-                </div>
-                <div class="card-body p-0" style="max-height:480px;overflow-y:auto;">
+    <!-- Alarmas -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-danger text-white">
+                Alarmas activas (@_alarmas.Count)
+            </div>
+            <div class="card-body p-0" style="max-height:480px;overflow-y:auto;">
+                @if (_alarmas.Count == 0)
+                {
+                    <div class="p-3 text-muted">Sin alarmas recientes.</div>
+                }
+                else
+                {
                     <table class="table table-sm table-hover mb-0">
                         <thead class="table-light sticky-top">
                             <tr>
                                 <th>Sensor</th>
-                                <th>Inv.</th>
-                                <th>Temp (°C)</th>
-                                <th>Hum (%)</th>
+                                <th>Tipo</th>
+                                <th>Valor</th>
+                                <th>Umbral</th>
                                 <th>Hora</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var m in _mediciones)
+                            @foreach (var a in _alarmas)
                             {
-                                <tr>
-                                    <td>@m.SensorId</td>
-                                    <td>@m.InvernaderoId</td>
-                                    <td>@m.Temperatura.ToString("F1")</td>
-                                    <td>@m.Humedad.ToString("F1")</td>
-                                    <td>@m.Timestamp.ToLocalTime().ToString("HH:mm:ss")</td>
+                                <tr class="table-warning">
+                                    <td>@a.SensorId</td>
+                                    <td>@a.Tipo</td>
+                                    <td>@a.ValorMedido.ToString("F1")</td>
+                                    <td>@a.UmbralConfigurado.ToString("F1")</td>
+                                    <td>@a.Timestamp.ToLocalTime().ToString("HH:mm:ss")</td>
                                 </tr>
                             }
                         </tbody>
                     </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Alarmas -->
-        <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-header bg-danger text-white">
-                    Alarmas activas (@_alarmas.Count)
-                </div>
-                <div class="card-body p-0" style="max-height:480px;overflow-y:auto;">
-                    @if (_alarmas.Count == 0)
-                    {
-                        <div class="p-3 text-muted">Sin alarmas recientes.</div>
-                    }
-                    else
-                    {
-                        <table class="table table-sm table-hover mb-0">
-                            <thead class="table-light sticky-top">
-                                <tr>
-                                    <th>Sensor</th>
-                                    <th>Tipo</th>
-                                    <th>Valor</th>
-                                    <th>Umbral</th>
-                                    <th>Hora</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var a in _alarmas)
-                                {
-                                    <tr class="table-warning">
-                                        <td>@a.SensorId</td>
-                                        <td>@a.Tipo</td>
-                                        <td>@a.ValorMedido.ToString("F1")</td>
-                                        <td>@a.UmbralConfigurado.ToString("F1")</td>
-                                        <td>@a.Timestamp.ToLocalTime().ToString("HH:mm:ss")</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    }
-                </div>
+                }
             </div>
         </div>
     </div>
-}
+</div>
 
 @code {
     private readonly List<MedicionDto> _mediciones = [];
     private readonly List<AlarmaDto>   _alarmas    = [];
     private HubConnection? _hub;
-    private string? _token;
     private bool _hubConectado;
 
     protected override async Task OnInitializedAsync()
     {
-        var result = await SessionStorage.GetAsync<string>("jwt_token");
-        if (!result.Success || string.IsNullOrEmpty(result.Value))
-        {
-            Nav.NavigateTo("/login");
-            return;
-        }
-        _token = result.Value;
+        var token = await (HttpContextAccessor.HttpContext?.GetTokenAsync("access_token")
+            ?? Task.FromResult<string?>(null));
 
-        var mediciones = await ApiClient.GetMedicionesAsync(_token);
+        var mediciones = await ApiClient.GetMedicionesAsync();
         _mediciones.AddRange(mediciones.Take(20));
 
-        var alarmas = await ApiClient.GetAlarmasAsync(_token);
+        var alarmas = await ApiClient.GetAlarmasAsync();
         _alarmas.AddRange(alarmas.Take(20));
 
-        await ConnectHubAsync();
+        await ConnectHubAsync(token);
         StateHasChanged();
     }
 
-    private async Task ConnectHubAsync()
+    private async Task ConnectHubAsync(string? token)
     {
+        var hubUrl = string.IsNullOrEmpty(token)
+            ? "http://localhost:5000/hubs/eventos"
+            : $"http://localhost:5000/hubs/eventos?access_token={token}";
+
         _hub = new HubConnectionBuilder()
-            .WithUrl("http://localhost:5000/hubs/eventos",
-                options => options.AccessTokenProvider = () => Task.FromResult<string?>(_token))
+            .WithUrl(hubUrl)
             .WithAutomaticReconnect()
             .AddJsonProtocol(opts =>
                 opts.PayloadSerializerOptions.PropertyNameCaseInsensitive = true)
             .Build();
 
-        _hub.Reconnected += _ => { _hubConectado = true; return InvokeAsync(StateHasChanged); };
+        _hub.Reconnected += _ => { _hubConectado = true;  return InvokeAsync(StateHasChanged); };
         _hub.Reconnecting += _ => { _hubConectado = false; return InvokeAsync(StateHasChanged); };
-        _hub.Closed += _ => { _hubConectado = false; return InvokeAsync(StateHasChanged); };
+        _hub.Closed += _ => { _hubConectado = false;       return InvokeAsync(StateHasChanged); };
 
         _hub.On<MedicionDto>("NuevaMedicion", m =>
         {

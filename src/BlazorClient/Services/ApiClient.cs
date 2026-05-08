@@ -1,35 +1,46 @@
 using BlazorClient.Models;
+using Microsoft.AspNetCore.Authentication;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace BlazorClient.Services;
 
-public sealed class ApiClient(HttpClient http) : IApiClient
+public sealed class ApiClient : IApiClient
 {
+    private readonly HttpClient _http;
+    private readonly IHttpContextAccessor _ctx;
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-    public async Task<LoginResponse?> LoginAsync(string username, string password)
+    public ApiClient(HttpClient http, IHttpContextAccessor ctx)
     {
-        var resp = await http.PostAsJsonAsync("/api/auth/login", new { usuario = username, password });
-        if (!resp.IsSuccessStatusCode) return null;
-        return await resp.Content.ReadFromJsonAsync<LoginResponse>(JsonOpts);
+        _http = http;
+        _ctx = ctx;
     }
 
-    public async Task<List<MedicionDto>> GetMedicionesAsync(string token)
+    private async Task SetAuthHeaderAsync()
     {
-        using var req = new HttpRequestMessage(HttpMethod.Get, "/api/mediciones");
-        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var resp = await http.SendAsync(req);
+        var token = await (_ctx.HttpContext?.GetTokenAsync("access_token")
+            ?? Task.FromResult<string?>(null));
+        if (!string.IsNullOrEmpty(token))
+        {
+            _http.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+        }
+    }
+
+    public async Task<List<MedicionDto>> GetMedicionesAsync()
+    {
+        await SetAuthHeaderAsync();
+        var resp = await _http.GetAsync("/api/mediciones");
         if (!resp.IsSuccessStatusCode) return [];
         return await resp.Content.ReadFromJsonAsync<List<MedicionDto>>(JsonOpts) ?? [];
     }
 
-    public async Task<List<AlarmaDto>> GetAlarmasAsync(string token)
+    public async Task<List<AlarmaDto>> GetAlarmasAsync()
     {
-        using var req = new HttpRequestMessage(HttpMethod.Get, "/api/alarmas");
-        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var resp = await http.SendAsync(req);
+        await SetAuthHeaderAsync();
+        var resp = await _http.GetAsync("/api/alarmas");
         if (!resp.IsSuccessStatusCode) return [];
         return await resp.Content.ReadFromJsonAsync<List<AlarmaDto>>(JsonOpts) ?? [];
     }

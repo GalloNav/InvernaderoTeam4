@@ -18,7 +18,8 @@
       "Bash(echo \"MS5 PID=$!\")",
       "Bash(echo \"MS2 PID=$!\")",
       "Bash(echo \"MS3 PID=$!\")",
-      "Bash(echo \"Gateway PID=$!\")"
+      "Bash(echo \"Gateway PID=$!\")",
+      "Bash(echo \"BlazorClient PID=$!\")"
     ]
   }
 }
