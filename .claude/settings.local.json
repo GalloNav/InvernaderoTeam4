@@ -7,7 +7,18 @@
       "Bash(dotnet build *)",
       "Bash(wait)",
       "Bash(dotnet sln *)",
-      "Bash(dotnet restore *)"
+      "Bash(dotnet restore *)",
+      "Bash(docker compose ps *)",
+      "Bash(docker compose logs *)",
+      "Bash(curl.exe -s http://localhost:8080/realms/invernadero/.well-known/openid-configuration)",
+      "Bash(python -m json.tool --no-ensure-ascii)",
+      "Bash(curl.exe *)",
+      "Bash(dotnet run *)",
+      "Bash(echo \"Iniciados en background, PID Gateway=$!\")",
+      "Bash(echo \"MS5 PID=$!\")",
+      "Bash(echo \"MS2 PID=$!\")",
+      "Bash(echo \"MS3 PID=$!\")",
+      "Bash(echo \"Gateway PID=$!\")"
     ]
   }
 }

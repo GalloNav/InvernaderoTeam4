@@ -5,7 +5,8 @@ using Microsoft.OpenApi.Models;
 using MS5.SensoresUsuarios.Auth;
 using MS5.SensoresUsuarios.Datos;
 using Serilog;
-using System.Text;
+using System.Security.Claims;
+using System.Text.Json;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -33,25 +34,64 @@ try
     builder.Services.Configure<UsuariosMockOptions>(builder.Configuration.GetSection("UsuariosMock"));
     builder.Services.AddSingleton<JwtTokenService>();
 
-    // JWT Bearer
-    var signingKey = builder.Configuration["Jwt:SigningKey"]!;
-    var issuer     = builder.Configuration["Jwt:Issuer"]!;
-    var audience   = builder.Configuration["Jwt:Audience"]!;
-
+    // JWT Bearer (Keycloak RS256/JWKS)
     builder.Services
         .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(opts =>
+        .AddJwtBearer(options =>
         {
-            opts.TokenValidationParameters = new TokenValidationParameters
+            var keycloakConfig = builder.Configuration.GetSection("Keycloak");
+            options.Authority            = keycloakConfig["Authority"];
+            options.Audience             = keycloakConfig["Audience"];
+            options.RequireHttpsMetadata = bool.Parse(keycloakConfig["RequireHttpsMetadata"] ?? "false");
+
+            options.TokenValidationParameters = new TokenValidationParameters
             {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
                 ValidateIssuer           = true,
-                ValidIssuer              = issuer,
-                ValidateAudience         = true,
-                ValidAudience            = audience,
+                ValidIssuer              = keycloakConfig["Authority"],
+                ValidateAudience         = false,  // Keycloak no incluye 'aud' por defecto
                 ValidateLifetime         = true,
-                ClockSkew                = TimeSpan.Zero
+                ValidateIssuerSigningKey = true,
+                NameClaimType            = "preferred_username",
+                RoleClaimType            = ClaimTypes.Role
+            };
+
+            options.Events = new JwtBearerEvents
+            {
+                // Aplanar realm_access.roles → ClaimTypes.Role
+                OnTokenValidated = context =>
+                {
+                    if (context.Principal?.Identity is ClaimsIdentity identity)
+                    {
+                        var realmAccessClaim = identity.FindFirst("realm_access");
+                        if (realmAccessClaim is not null)
+                        {
+                            try
+                            {
+                                using var doc = JsonDocument.Parse(realmAccessClaim.Value);
+                                if (doc.RootElement.TryGetProperty("roles", out var rolesElement)
+                                    && rolesElement.ValueKind == JsonValueKind.Array)
+                                {
+                                    foreach (var role in rolesElement.EnumerateArray())
+                                    {
+                                        var roleName = role.GetString();
+                                        if (!string.IsNullOrEmpty(roleName))
+                                            identity.AddClaim(new Claim(ClaimTypes.Role, roleName));
+                                    }
+                                }
+                            }
+                            catch (JsonException) { }
+                        }
+                    }
+                    return Task.CompletedTask;
+                },
+
+                OnAuthenticationFailed = context =>
+                {
+                    var logger = context.HttpContext.RequestServices
+                        .GetRequiredService<ILogger<Program>>();
+                    logger.LogWarning("Auth fallida: {Error}", context.Exception.Message);
+                    return Task.CompletedTask;
+                }
             };
         });
 

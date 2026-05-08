@@ -6,7 +6,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
-using System.Text;
+using System.Security.Claims;
+using System.Text.Json;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -25,30 +26,30 @@ try
 
     var cfg = builder.Configuration;
 
-    // ── JWT Bearer ────────────────────────────────────────────────────────────
-    var jwtKey      = cfg["Jwt:Key"]!;
-    var jwtIssuer   = cfg["Jwt:Issuer"]!;
-    var jwtAudience = cfg["Jwt:Audience"]!;
-
+    // ── JWT Bearer (Keycloak RS256/JWKS) ──────────────────────────────────────
     builder.Services
         .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(opts =>
+        .AddJwtBearer(options =>
         {
-            opts.TokenValidationParameters = new TokenValidationParameters
+            var keycloakConfig = builder.Configuration.GetSection("Keycloak");
+            options.Authority            = keycloakConfig["Authority"];
+            options.Audience             = keycloakConfig["Audience"];
+            options.RequireHttpsMetadata = bool.Parse(keycloakConfig["RequireHttpsMetadata"] ?? "false");
+
+            options.TokenValidationParameters = new TokenValidationParameters
             {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
                 ValidateIssuer           = true,
-                ValidIssuer              = jwtIssuer,
-                ValidateAudience         = true,
-                ValidAudience            = jwtAudience,
+                ValidIssuer              = keycloakConfig["Authority"],
+                ValidateAudience         = false,  // Keycloak no incluye 'aud' por defecto
                 ValidateLifetime         = true,
-                ClockSkew                = TimeSpan.Zero
+                ValidateIssuerSigningKey = true,
+                NameClaimType            = "preferred_username",
+                RoleClaimType            = ClaimTypes.Role
             };
 
-            // Soporte JWT desde query string para conexiones SignalR
-            opts.Events = new JwtBearerEvents
+            options.Events = new JwtBearerEvents
             {
+                // Soporte JWT desde query string para conexiones SignalR
                 OnMessageReceived = context =>
                 {
                     var accessToken = context.Request.Query["access_token"];
@@ -56,6 +57,42 @@ try
                     if (!string.IsNullOrEmpty(accessToken) &&
                         path.StartsWithSegments("/hubs"))
                         context.Token = accessToken;
+                    return Task.CompletedTask;
+                },
+
+                // Aplanar realm_access.roles → ClaimTypes.Role
+                OnTokenValidated = context =>
+                {
+                    if (context.Principal?.Identity is ClaimsIdentity identity)
+                    {
+                        var realmAccessClaim = identity.FindFirst("realm_access");
+                        if (realmAccessClaim is not null)
+                        {
+                            try
+                            {
+                                using var doc = JsonDocument.Parse(realmAccessClaim.Value);
+                                if (doc.RootElement.TryGetProperty("roles", out var rolesElement)
+                                    && rolesElement.ValueKind == JsonValueKind.Array)
+                                {
+                                    foreach (var role in rolesElement.EnumerateArray())
+                                    {
+                                        var roleName = role.GetString();
+                                        if (!string.IsNullOrEmpty(roleName))
+                                            identity.AddClaim(new Claim(ClaimTypes.Role, roleName));
+                                    }
+                                }
+                            }
+                            catch (JsonException) { }
+                        }
+                    }
+                    return Task.CompletedTask;
+                },
+
+                OnAuthenticationFailed = context =>
+                {
+                    var logger = context.HttpContext.RequestServices
+                        .GetRequiredService<ILogger<Program>>();
+                    logger.LogWarning("Auth fallida: {Error}", context.Exception.Message);
                     return Task.CompletedTask;
                 }
             };
