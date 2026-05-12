@@ -19,7 +19,8 @@
       "Bash(echo \"MS2 PID=$!\")",
       "Bash(echo \"MS3 PID=$!\")",
       "Bash(echo \"Gateway PID=$!\")",
-      "Bash(echo \"BlazorClient PID=$!\")"
+      "Bash(echo \"BlazorClient PID=$!\")",
+      "Bash(Select-String -Pattern \"^Build|error CS|warning CS|Error\\\\\\(s\\\\\\)|Warning\\\\\\(s\\\\\\)\")"
     ]
   }
 }

@@ -1,11 +1,12 @@
 @page "/"
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Authorize]
+@implements IDisposable
 @implements IAsyncDisposable
 @inject IApiClient ApiClient
-@inject IHttpContextAccessor HttpContextAccessor
+@inject TokenCache TokenCache
+@inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Nav
-@using Microsoft.AspNetCore.Authentication
 
 <PageTitle>Dashboard — Invernadero IoT</PageTitle>
 
@@ -94,28 +95,63 @@
 </div>
 
 @code {
-    private readonly List<MedicionDto> _mediciones = [];
-    private readonly List<AlarmaDto>   _alarmas    = [];
+    private List<MedicionDto> _mediciones = [];
+    private List<AlarmaDto>   _alarmas    = [];
     private HubConnection? _hub;
     private bool _hubConectado;
 
     protected override async Task OnInitializedAsync()
     {
-        var token = await (HttpContextAccessor.HttpContext?.GetTokenAsync("access_token")
-            ?? Task.FromResult<string?>(null));
-
-        var mediciones = await ApiClient.GetMedicionesAsync();
-        _mediciones.AddRange(mediciones.Take(20));
-
-        var alarmas = await ApiClient.GetAlarmasAsync();
-        _alarmas.AddRange(alarmas.Take(20));
-
-        await ConnectHubAsync(token);
-        StateHasChanged();
+        Nav.LocationChanged += HandleLocationChanged;
+        await CargarDatosInicialesAsync();
+        await ConectarSignalRAsync();
     }
 
-    private async Task ConnectHubAsync(string? token)
+    private async void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
     {
+        // La ruta del dashboard es "/", comprobamos el path absoluto
+        var path = new Uri(e.Location).AbsolutePath;
+        if (path == "/")
+        {
+            Console.WriteLine($"[Dashboard] LocationChanged detectado: {e.Location}");
+            try
+            {
+                await CargarDatosInicialesAsync();
+                await InvokeAsync(StateHasChanged);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Dashboard] Error en LocationChanged: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task CargarDatosInicialesAsync()
+    {
+        Console.WriteLine("[Dashboard] CargarDatosInicialesAsync ejecutándose");
+        try
+        {
+            var meds = await ApiClient.GetMedicionesAsync();
+            _mediciones = meds.Take(20).ToList();
+            Console.WriteLine($"[Dashboard] Cargadas {_mediciones.Count} mediciones");
+            // Las alarmas son eventos en tiempo real vía SignalR — no se cargan via REST
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Dashboard] Error cargando datos: {ex.Message}");
+            Console.WriteLine($"[Dashboard] StackTrace: {ex.StackTrace}");
+        }
+    }
+
+    private async Task ConectarSignalRAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var sub = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? authState.User.FindFirst("sub")?.Value;
+        var token = !string.IsNullOrEmpty(sub) ? TokenCache.Get(sub) : null;
+
         var hubUrl = string.IsNullOrEmpty(token)
             ? "http://localhost:5000/hubs/eventos"
             : $"http://localhost:5000/hubs/eventos?access_token={token}";
@@ -127,9 +163,9 @@
                 opts.PayloadSerializerOptions.PropertyNameCaseInsensitive = true)
             .Build();
 
-        _hub.Reconnected += _ => { _hubConectado = true;  return InvokeAsync(StateHasChanged); };
+        _hub.Reconnected  += _ => { _hubConectado = true;  return InvokeAsync(StateHasChanged); };
         _hub.Reconnecting += _ => { _hubConectado = false; return InvokeAsync(StateHasChanged); };
-        _hub.Closed += _ => { _hubConectado = false;       return InvokeAsync(StateHasChanged); };
+        _hub.Closed       += _ => { _hubConectado = false; return InvokeAsync(StateHasChanged); };
 
         _hub.On<MedicionDto>("NuevaMedicion", m =>
         {
@@ -149,8 +185,14 @@
         _hubConectado = true;
     }
 
+    public void Dispose()
+    {
+        Nav.LocationChanged -= HandleLocationChanged;
+    }
+
     public async ValueTask DisposeAsync()
     {
+        Dispose();
         if (_hub is not null)
             await _hub.DisposeAsync();
     }

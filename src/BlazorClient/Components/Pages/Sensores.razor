@@ -1,0 +1,46 @@
+@page "/sensores"
+@attribute [Authorize(Roles = "Admin,Tecnico")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Información de Sensores</PageTitle>
+
+<div class="container mt-4">
+    <h2>🔧 Información de Sensores</h2>
+    <p class="lead">Página para <strong>Administradores</strong> y <strong>Técnicos</strong>.</p>
+
+    <div class="alert alert-info">
+        <h5>Información disponible:</h5>
+        <ul class="mb-0">
+            <li>✅ Listado de sensores con su marca y modelo</li>
+            <li>✅ Estado de cada sensor (activo, inactivo, último reporte)</li>
+            <li>✅ Invernadero al que está asignado</li>
+            <li>✅ Histórico de mantenimientos (pendiente)</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5>Catálogo de sensores</h5>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Marca</th>
+                        <th>Invernadero</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>1</td><td>MarcaA</td><td>INV-001</td><td><span class="badge bg-success">Activo</span></td></tr>
+                    <tr><td>2</td><td>MarcaA</td><td>INV-001</td><td><span class="badge bg-success">Activo</span></td></tr>
+                    <tr><td>3</td><td>MarcaB</td><td>INV-001</td><td><span class="badge bg-success">Activo</span></td></tr>
+                    <tr><td>4</td><td>MarcaB</td><td>INV-001</td><td><span class="badge bg-success">Activo</span></td></tr>
+                    <tr><td>5</td><td>MarcaB</td><td>INV-001</td><td><span class="badge bg-success">Activo</span></td></tr>
+                </tbody>
+            </table>
+            <p class="text-muted">
+                <small>Datos hardcodeados para demo. Integración con MS5 pendiente.</small>
+            </p>
+        </div>
+    </div>
+</div>

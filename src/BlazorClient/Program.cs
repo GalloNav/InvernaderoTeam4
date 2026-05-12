@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -26,6 +27,7 @@ try
         .AddInteractiveServerComponents();
 
     builder.Services.AddHttpContextAccessor();
+    builder.Services.AddSingleton<TokenCache>();
     builder.Services.AddCascadingAuthenticationState();
     builder.Services.AddAuthorization();
 
@@ -58,7 +60,8 @@ try
         options.Scope.Add("profile");
         options.Scope.Add("email");
 
-        options.SignedOutRedirectUri = kc["PostLogoutRedirectUri"]!;
+        options.SignedOutCallbackPath  = "/signout-callback-oidc";
+        options.SignedOutRedirectUri   = "/";
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -73,24 +76,48 @@ try
             {
                 if (context.Principal?.Identity is ClaimsIdentity identity)
                 {
-                    var realmAccess = identity.FindFirst("realm_access");
-                    if (realmAccess is not null)
+                    var sub = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                    ?? identity.FindFirst("sub")?.Value;
+                    var accessToken = context.TokenEndpointResponse?.AccessToken;
+
+                    // Guardar token en cache singleton para uso desde componentes interactivos
+                    if (!string.IsNullOrEmpty(sub) && !string.IsNullOrEmpty(accessToken))
+                    {
+                        var cache = context.HttpContext.RequestServices
+                            .GetRequiredService<TokenCache>();
+                        cache.Set(sub, accessToken);
+                    }
+
+                    // Decodificar el access_token y extraer realm_access.roles
+                    // (los roles de Keycloak vienen en el ACCESS token, no en el ID token)
+                    if (!string.IsNullOrEmpty(accessToken))
                     {
                         try
                         {
-                            using var doc = JsonDocument.Parse(realmAccess.Value);
-                            if (doc.RootElement.TryGetProperty("roles", out var rolesEl)
-                                && rolesEl.ValueKind == JsonValueKind.Array)
+                            var handler = new JwtSecurityTokenHandler();
+                            var jwt = handler.ReadJwtToken(accessToken);
+                            var realmAccessClaim = jwt.Claims.FirstOrDefault(c => c.Type == "realm_access");
+
+                            if (realmAccessClaim is not null)
                             {
-                                foreach (var role in rolesEl.EnumerateArray())
+                                using var doc = JsonDocument.Parse(realmAccessClaim.Value);
+                                if (doc.RootElement.TryGetProperty("roles", out var rolesEl)
+                                    && rolesEl.ValueKind == JsonValueKind.Array)
                                 {
-                                    var roleName = role.GetString();
-                                    if (!string.IsNullOrEmpty(roleName))
-                                        identity.AddClaim(new Claim(ClaimTypes.Role, roleName));
+                                    foreach (var role in rolesEl.EnumerateArray())
+                                    {
+                                        var roleName = role.GetString();
+                                        if (!string.IsNullOrEmpty(roleName))
+                                            identity.AddClaim(new Claim(ClaimTypes.Role, roleName));
+                                    }
                                 }
                             }
                         }
-                        catch (JsonException) { }
+                        catch (Exception)
+                        {
+                            // Si la decodificación falla, simplemente no se agregan roles
+                            // (el usuario seguirá autenticado pero sin permisos especiales)
+                        }
                     }
                 }
                 return Task.CompletedTask;
@@ -114,8 +141,13 @@ try
             new[] { OpenIdConnectDefaults.AuthenticationScheme }
         ));
 
-    app.MapGet("/logout", async (HttpContext ctx) =>
+    app.MapGet("/logout", async (HttpContext ctx, TokenCache cache) =>
     {
+        var sub = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? ctx.User.FindFirst("sub")?.Value;
+        if (!string.IsNullOrEmpty(sub))
+            cache.Remove(sub);
+
         await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         await ctx.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme,
             new AuthenticationProperties { RedirectUri = "/" });
@@ -133,4 +165,12 @@ catch (Exception ex)
 finally
 {
     Log.CloseAndFlush();
+}
+
+public sealed class TokenCache
+{
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _tokens = new();
+    public void Set(string userId, string token) => _tokens[userId] = token;
+    public string? Get(string userId) => _tokens.TryGetValue(userId, out var t) ? t : null;
+    public void Remove(string userId) => _tokens.TryRemove(userId, out _);
 }

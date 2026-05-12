@@ -1,7 +1,8 @@
 using BlazorClient.Models;
-using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Components.Authorization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using System.Text.Json;
 
 namespace BlazorClient.Services;
@@ -9,23 +10,31 @@ namespace BlazorClient.Services;
 public sealed class ApiClient : IApiClient
 {
     private readonly HttpClient _http;
-    private readonly IHttpContextAccessor _ctx;
+    private readonly TokenCache _tokenCache;
+    private readonly AuthenticationStateProvider _authProvider;
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-    public ApiClient(HttpClient http, IHttpContextAccessor ctx)
+    public ApiClient(HttpClient http, TokenCache tokenCache, AuthenticationStateProvider authProvider)
     {
         _http = http;
-        _ctx = ctx;
+        _tokenCache = tokenCache;
+        _authProvider = authProvider;
     }
 
     private async Task SetAuthHeaderAsync()
     {
-        var token = await (_ctx.HttpContext?.GetTokenAsync("access_token")
-            ?? Task.FromResult<string?>(null));
-        if (!string.IsNullOrEmpty(token))
+        var authState = await _authProvider.GetAuthenticationStateAsync();
+        var sub = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? authState.User.FindFirst("sub")?.Value;
+
+        if (!string.IsNullOrEmpty(sub))
         {
-            _http.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
+            var token = _tokenCache.Get(sub);
+            if (!string.IsNullOrEmpty(token))
+            {
+                _http.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", token);
+            }
         }
     }
 
@@ -37,11 +46,5 @@ public sealed class ApiClient : IApiClient
         return await resp.Content.ReadFromJsonAsync<List<MedicionDto>>(JsonOpts) ?? [];
     }
 
-    public async Task<List<AlarmaDto>> GetAlarmasAsync()
-    {
-        await SetAuthHeaderAsync();
-        var resp = await _http.GetAsync("/api/alarmas");
-        if (!resp.IsSuccessStatusCode) return [];
-        return await resp.Content.ReadFromJsonAsync<List<AlarmaDto>>(JsonOpts) ?? [];
-    }
+
 }

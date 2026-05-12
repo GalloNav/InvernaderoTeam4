@@ -1,12 +1,62 @@
-<div class="d-flex gap-3 align-items-center">
-    <NavLink class="nav-link text-white" href="/" Match="NavLinkMatch.All">Dashboard</NavLink>
-    <AuthorizeView>
-        <Authorized>
-            <span class="nav-link text-white-50">Hola, @context.User.Identity?.Name</span>
+@rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode())
+
+<AuthorizeView>
+    <Authorized>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <NavLink class="nav-link text-white" href="/" Match="NavLinkMatch.All">Dashboard</NavLink>
+
+            <AuthorizeView Roles="Admin" Context="adminInv">
+                <Authorized>
+                    <NavLink class="nav-link text-white" href="/invernaderos">Invernaderos</NavLink>
+                </Authorized>
+            </AuthorizeView>
+
+            <AuthorizeView Roles="Admin,Operador" Context="umbCtx">
+                <Authorized>
+                    <NavLink class="nav-link text-white" href="/umbrales">Umbrales</NavLink>
+                </Authorized>
+            </AuthorizeView>
+
+            <AuthorizeView Roles="Admin" Context="adminUsr">
+                <Authorized>
+                    <NavLink class="nav-link text-white" href="/usuarios">Usuarios</NavLink>
+                </Authorized>
+            </AuthorizeView>
+
+            <AuthorizeView Roles="Admin,Tecnico" Context="senCtx">
+                <Authorized>
+                    <NavLink class="nav-link text-white" href="/sensores">Sensores</NavLink>
+                </Authorized>
+            </AuthorizeView>
+
+            <span class="navbar-text text-white ms-2">
+                Hola, @context.User.Identity?.Name
+                @{
+                    string rolDisplay = "";
+                    string badgeClass = "bg-secondary";
+                    if (context.User.IsInRole("Admin"))
+                    {
+                        rolDisplay = "Administrador";
+                        badgeClass = "bg-danger";
+                    }
+                    else if (context.User.IsInRole("Operador"))
+                    {
+                        rolDisplay = "Operador";
+                        badgeClass = "bg-primary";
+                    }
+                    else if (context.User.IsInRole("Tecnico"))
+                    {
+                        rolDisplay = "Técnico";
+                        badgeClass = "bg-info";
+                    }
+                }
+                <span class="badge @badgeClass ms-1">@rolDisplay</span>
+            </span>
+
             <a class="nav-link text-white" href="/logout">Cerrar sesión</a>
-        </Authorized>
-        <NotAuthorized>
-            <a class="nav-link text-white" href="/login">Iniciar sesión</a>
-        </NotAuthorized>
-    </AuthorizeView>
-</div>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <a class="nav-link text-white" href="/login">Iniciar sesión</a>
+    </NotAuthorized>
+</AuthorizeView>

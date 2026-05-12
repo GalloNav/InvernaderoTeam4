@@ -1,0 +1,46 @@
+@page "/invernaderos"
+@attribute [Authorize(Roles = "Admin")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Gestión de Invernaderos</PageTitle>
+
+<div class="container mt-4">
+    <h2>🏗️ Gestión de Invernaderos</h2>
+    <p class="lead">Página exclusiva para <strong>Administradores</strong>.</p>
+
+    <div class="alert alert-info">
+        <h5>Permisos del rol Administrador:</h5>
+        <ul class="mb-0">
+            <li>✅ Crear nuevos invernaderos</li>
+            <li>✅ Editar información de invernaderos existentes</li>
+            <li>✅ Eliminar invernaderos</li>
+            <li>✅ Asignar sensores a invernaderos</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5>Invernaderos registrados</h5>
+            <table class="table table-striped">
+                <thead>
+                    <tr><th>ID</th><th>Nombre</th><th>Ubicación</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>INV-001</td>
+                        <td>Invernadero Principal</td>
+                        <td>Sector Norte</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" disabled>Editar</button>
+                            <button class="btn btn-sm btn-outline-danger" disabled>Eliminar</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn btn-success" disabled>+ Nuevo invernadero</button>
+            <p class="text-muted mt-2">
+                <small>Funcionalidad CRUD pendiente de implementación.</small>
+            </p>
+        </div>
+    </div>
+</div>

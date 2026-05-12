@@ -1,0 +1,35 @@
+@page "/usuarios"
+@attribute [Authorize(Roles = "Admin")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Gestión de Usuarios</PageTitle>
+
+<div class="container mt-4">
+    <h2>👥 Gestión de Usuarios</h2>
+    <p class="lead">Página exclusiva para <strong>Administradores</strong>.</p>
+
+    <div class="alert alert-info">
+        <h5>Permisos del rol Administrador:</h5>
+        <ul class="mb-0">
+            <li>✅ Ver lista de usuarios del sistema</li>
+            <li>✅ Modificar preferencias de notificación (Email, SMS, Push)</li>
+            <li>✅ Asignar invernaderos a usuarios</li>
+        </ul>
+    </div>
+
+    <div class="alert alert-warning">
+        <strong>Nota:</strong> los usuarios del sistema viven en Keycloak (Identity Provider).
+        La administración de identidades se hace desde el panel admin de Keycloak
+        en <code>http://localhost:8080/admin</code>. Esta página gestiona las
+        preferencias de notificación que viven en el microservicio MS5.
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5>Preferencias de notificación</h5>
+            <p class="text-muted">
+                <small>Funcionalidad pendiente de implementación.</small>
+            </p>
+        </div>
+    </div>
+</div>

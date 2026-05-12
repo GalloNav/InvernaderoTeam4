@@ -1,0 +1,46 @@
+@page "/umbrales"
+@attribute [Authorize(Roles = "Admin,Operador")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Configuración de Umbrales</PageTitle>
+
+<div class="container mt-4">
+    <h2>⚙️ Configuración de Umbrales</h2>
+    <p class="lead">Página para <strong>Administradores</strong> y <strong>Operadores</strong>.</p>
+
+    <div class="alert alert-info">
+        <h5>Permisos requeridos:</h5>
+        <ul class="mb-0">
+            <li>✅ Ver umbrales por invernadero y por sensor</li>
+            <li>✅ Ajustar umbrales de temperatura y humedad</li>
+            <li>✅ Resetear umbrales a valores predeterminados</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5>Umbrales actuales</h5>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Sensor</th>
+                        <th>Temp. máxima (°C)</th>
+                        <th>Humedad máxima (%)</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Sensor 1</td>
+                        <td>30.0</td>
+                        <td>85.0</td>
+                        <td><button class="btn btn-sm btn-outline-primary" disabled>Editar</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="text-muted">
+                <small>Funcionalidad de edición pendiente de implementación.</small>
+            </p>
+        </div>
+    </div>
+</div>
