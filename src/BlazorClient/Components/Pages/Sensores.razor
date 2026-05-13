@@ -1,6 +1,9 @@
 @page "/sensores"
 @attribute [Authorize(Roles = "Admin,Tecnico")]
-@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode())
+@using BlazorClient.Models
+@using BlazorClient.Services
+@inject IApiClient ApiClient
 
 <PageTitle>Información de Sensores</PageTitle>
 
@@ -11,36 +14,146 @@
     <div class="alert alert-info">
         <h5>Información disponible:</h5>
         <ul class="mb-0">
-            <li>✅ Listado de sensores con su marca y modelo</li>
-            <li>✅ Estado de cada sensor (activo, inactivo, último reporte)</li>
+            <li>✅ Listado de sensores con marca y tipo</li>
+            <li>✅ Estado de cada sensor (Activo / Inactivo)</li>
             <li>✅ Invernadero al que está asignado</li>
-            <li>✅ Histórico de mantenimientos (pendiente)</li>
+            <li>✅ Fecha de registro en el sistema</li>
         </ul>
     </div>
 
     <div class="card">
         <div class="card-body">
-            <h5>Catálogo de sensores</h5>
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Marca</th>
-                        <th>Invernadero</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td>1</td><td>MarcaA</td><td>INV-001</td><td><span class="badge bg-success">Activo</span></td></tr>
-                    <tr><td>2</td><td>MarcaA</td><td>INV-001</td><td><span class="badge bg-success">Activo</span></td></tr>
-                    <tr><td>3</td><td>MarcaB</td><td>INV-001</td><td><span class="badge bg-success">Activo</span></td></tr>
-                    <tr><td>4</td><td>MarcaB</td><td>INV-001</td><td><span class="badge bg-success">Activo</span></td></tr>
-                    <tr><td>5</td><td>MarcaB</td><td>INV-001</td><td><span class="badge bg-success">Activo</span></td></tr>
-                </tbody>
-            </table>
-            <p class="text-muted">
-                <small>Datos hardcodeados para demo. Integración con MS5 pendiente.</small>
-            </p>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Catálogo de sensores</h5>
+                <button class="btn btn-sm btn-outline-secondary"
+                        @onclick="CargarSensores"
+                        disabled="@cargando">
+                    @if (cargando)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        <span>Cargando...</span>
+                    }
+                    else
+                    {
+                        <span>🔄 Refrescar</span>
+                    }
+                </button>
+            </div>
+
+            @if (error != null)
+            {
+                <div class="alert alert-danger">
+                    <strong>Error al cargar:</strong> @error
+                </div>
+            }
+            else if (cargando && sensores.Count == 0)
+            {
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2">Cargando sensores...</p>
+                </div>
+            }
+            else if (sensores.Count == 0)
+            {
+                <div class="alert alert-warning">No hay sensores registrados.</div>
+            }
+            else
+            {
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Marca</th>
+                            <th>Tipo</th>
+                            <th>Invernadero</th>
+                            <th>Estado</th>
+                            <th>Registrado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in sensores.OrderBy(s => s.Id))
+                        {
+                            <tr>
+                                <td><strong>@s.Id</strong></td>
+                                <td>
+                                    @{
+                                        var marcaClass = s.Marca == "MarcaA" ? "bg-primary" : "bg-warning text-dark";
+                                    }
+                                    <span class="badge @marcaClass">@s.Marca</span>
+                                </td>
+                                <td>
+                                    @{
+                                        var tipoText = (s.TipoSensor?.ToLower()) switch
+                                        {
+                                            "temperatura" => "🌡️ Temperatura",
+                                            "humedad" => "💧 Humedad",
+                                            "ambos" => "🌡️💧 Ambos",
+                                            _ => s.TipoSensor ?? "N/A"
+                                        };
+                                    }
+                                    @tipoText
+                                </td>
+                                <td>@s.InvernaderoId</td>
+                                <td>
+                                    @if (s.Activo)
+                                    {
+                                        <span class="badge bg-success">● Activo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">● Inactivo</span>
+                                    }
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        @s.FechaRegistro.ToString("dd/MM/yyyy HH:mm")
+                                    </small>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <p class="text-muted small mb-0">
+                    Total: <strong>@sensores.Count</strong> sensores |
+                    Activos: <strong>@sensores.Count(s => s.Activo)</strong> |
+                    Inactivos: <strong>@sensores.Count(s => !s.Activo)</strong>
+                </p>
+            }
         </div>
     </div>
 </div>
+
+@code {
+    private List<SensorDto> sensores = new();
+    private bool cargando = false;
+    private string? error = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarSensores();
+    }
+
+    private async Task CargarSensores()
+    {
+        cargando = true;
+        error = null;
+        StateHasChanged();
+
+        try
+        {
+            sensores = await ApiClient.GetSensoresAsync();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            sensores = new();
+        }
+        finally
+        {
+            cargando = false;
+            StateHasChanged();
+        }
+    }
+}

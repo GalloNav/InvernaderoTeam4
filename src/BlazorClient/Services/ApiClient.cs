@@ -46,5 +46,11 @@ public sealed class ApiClient : IApiClient
         return await resp.Content.ReadFromJsonAsync<List<MedicionDto>>(JsonOpts) ?? [];
     }
 
-
+    public async Task<List<SensorDto>> GetSensoresAsync()
+    {
+        await SetAuthHeaderAsync();
+        var resp = await _http.GetAsync("/api/sensores");
+        if (!resp.IsSuccessStatusCode) return [];
+        return await resp.Content.ReadFromJsonAsync<List<SensorDto>>(JsonOpts) ?? [];
+    }
 }
