@@ -1,35 +1,206 @@
 @page "/usuarios"
 @attribute [Authorize(Roles = "Admin")]
-@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode())
+@using BlazorClient.Models
+@using BlazorClient.Services
+@inject IApiClient ApiClient
 
-<PageTitle>Gestión de Usuarios</PageTitle>
+<PageTitle>Gestión de Usuarios y Notificaciones</PageTitle>
 
 <div class="container mt-4">
-    <h2>👥 Gestión de Usuarios</h2>
+    <h2>👥 Usuarios y Preferencias de Notificación</h2>
     <p class="lead">Página exclusiva para <strong>Administradores</strong>.</p>
 
     <div class="alert alert-info">
-        <h5>Permisos del rol Administrador:</h5>
-        <ul class="mb-0">
-            <li>✅ Ver lista de usuarios del sistema</li>
-            <li>✅ Modificar preferencias de notificación (Email, SMS, Push)</li>
-            <li>✅ Asignar invernaderos a usuarios</li>
-        </ul>
+        <strong>Arquitectura:</strong> los usuarios del sistema viven en
+        <strong>Keycloak</strong> (Identity Provider). La gestión de identidades
+        (crear usuarios, asignar roles, resetear contraseñas) se hace desde el panel
+        admin de Keycloak en <code>http://localhost:8080/admin</code>.
+        <br/>
+        Esta página muestra las <strong>preferencias de notificación</strong> de
+        cada usuario, las cuales viven en el microservicio MS5.
     </div>
 
-    <div class="alert alert-warning">
-        <strong>Nota:</strong> los usuarios del sistema viven en Keycloak (Identity Provider).
-        La administración de identidades se hace desde el panel admin de Keycloak
-        en <code>http://localhost:8080/admin</code>. Esta página gestiona las
-        preferencias de notificación que viven en el microservicio MS5.
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Usuarios registrados</h5>
+        <button class="btn btn-sm btn-outline-secondary"
+                @onclick="CargarUsuarios"
+                disabled="@cargando">
+            @if (cargando)
+            {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+                <span>Cargando...</span>
+            }
+            else
+            {
+                <span>🔄 Refrescar</span>
+            }
+        </button>
     </div>
 
-    <div class="card">
-        <div class="card-body">
-            <h5>Preferencias de notificación</h5>
-            <p class="text-muted">
-                <small>Funcionalidad pendiente de implementación.</small>
-            </p>
+    @if (error != null)
+    {
+        <div class="alert alert-danger">
+            <strong>Error al cargar:</strong> @error
         </div>
-    </div>
+    }
+    else if (cargando && usuarios.Count == 0)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Cargando usuarios...</p>
+        </div>
+    }
+    else if (usuarios.Count == 0)
+    {
+        <div class="alert alert-warning">No hay usuarios registrados en MS5.</div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var u in usuarios)
+            {
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>@u.Username</strong>
+                                @{
+                                    var badgeClass = u.Rol switch
+                                    {
+                                        "Admin" => "bg-danger",
+                                        "Operador" => "bg-primary",
+                                        "Tecnico" => "bg-info",
+                                        _ => "bg-secondary"
+                                    };
+                                }
+                                <span class="badge @badgeClass ms-2">@u.Rol</span>
+                            </div>
+                            <small class="text-muted">ID: @u.Id</small>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-1"><strong>📧 Email:</strong> @u.Email</p>
+                            <p class="mb-1"><strong>📱 Teléfono:</strong> @u.Telefono</p>
+                            <p class="mb-1">
+                                <strong>🔔 Push Token:</strong>
+                                <code class="text-muted small">@u.PushToken</code>
+                            </p>
+                            <p class="mb-3 text-muted small">
+                                Registrado: @u.FechaRegistro.ToString("dd/MM/yyyy")
+                            </p>
+
+                            <button class="btn btn-sm btn-outline-primary"
+                                    @onclick="() => CargarPreferencias(u.Id)"
+                                    disabled="@(cargandoPreferenciasUser == u.Id)">
+                                @if (cargandoPreferenciasUser == u.Id)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1"></span>
+                                    <span>Cargando...</span>
+                                }
+                                else
+                                {
+                                    <span>🔔 Ver preferencias de notificación</span>
+                                }
+                            </button>
+
+                            @if (preferenciasPorUsuario.TryGetValue(u.Id, out var prefs))
+                            {
+                                <div class="mt-3 p-3 border rounded bg-light">
+                                    <strong class="d-block mb-2">Canales activos:</strong>
+                                    @if (prefs.CanalesActivos.Count == 0)
+                                    {
+                                        <span class="text-muted">Ningún canal activo.</span>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var canal in prefs.CanalesActivos)
+                                        {
+                                            var canalClass = canal switch
+                                            {
+                                                "Email" => "bg-success",
+                                                "SMS" => "bg-warning text-dark",
+                                                "Push" => "bg-primary",
+                                                _ => "bg-secondary"
+                                            };
+                                            var canalIcon = canal switch
+                                            {
+                                                "Email" => "📧",
+                                                "SMS" => "💬",
+                                                "Push" => "🔔",
+                                                _ => "•"
+                                            };
+                                            <span class="badge @canalClass me-1">
+                                                @canalIcon @canal
+                                            </span>
+                                        }
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <p class="text-muted small mt-3">
+            Total: <strong>@usuarios.Count</strong> usuarios registrados en MS5.
+        </p>
+    }
 </div>
+
+@code {
+    private List<UsuarioDto> usuarios = new();
+    private Dictionary<int, PreferenciasDto> preferenciasPorUsuario = new();
+    private bool cargando = false;
+    private int? cargandoPreferenciasUser = null;
+    private string? error = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarUsuarios();
+    }
+
+    private async Task CargarUsuarios()
+    {
+        cargando = true;
+        error = null;
+        StateHasChanged();
+
+        try
+        {
+            usuarios = await ApiClient.GetUsuariosAsync();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            usuarios = new();
+        }
+        finally
+        {
+            cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarPreferencias(int userId)
+    {
+        cargandoPreferenciasUser = userId;
+        StateHasChanged();
+
+        try
+        {
+            var prefs = await ApiClient.GetPreferenciasAsync(userId);
+            if (prefs is not null)
+                preferenciasPorUsuario[userId] = prefs;
+        }
+        catch (Exception ex)
+        {
+            error = $"Error al cargar preferencias: {ex.Message}";
+        }
+        finally
+        {
+            cargandoPreferenciasUser = null;
+            StateHasChanged();
+        }
+    }
+}

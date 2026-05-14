@@ -83,4 +83,20 @@ public sealed class ApiClient : IApiClient
         var resp = await _http.PostAsJsonAsync("/api/invernaderos", invernadero, JsonOpts);
         return resp.IsSuccessStatusCode;
     }
+
+    public async Task<List<UsuarioDto>> GetUsuariosAsync()
+    {
+        await SetAuthHeaderAsync();
+        var resp = await _http.GetAsync("/api/usuarios");
+        if (!resp.IsSuccessStatusCode) return [];
+        return await resp.Content.ReadFromJsonAsync<List<UsuarioDto>>(JsonOpts) ?? [];
+    }
+
+    public async Task<PreferenciasDto?> GetPreferenciasAsync(int userId)
+    {
+        await SetAuthHeaderAsync();
+        var resp = await _http.GetAsync($"/api/usuarios/{userId}/preferencias");
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadFromJsonAsync<PreferenciasDto>(JsonOpts);
+    }
 }

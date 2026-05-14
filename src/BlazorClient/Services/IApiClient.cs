@@ -10,4 +10,6 @@ public interface IApiClient
     Task<bool> PutUmbralInvernaderoAsync(string invernaderoId, UmbralDto umbral);
     Task<List<InvernaderoDto>> GetInvernaderosAsync();
     Task<bool> PostInvernaderoAsync(InvernaderoDto invernadero);
+    Task<List<UsuarioDto>> GetUsuariosAsync();
+    Task<PreferenciasDto?> GetPreferenciasAsync(int userId);
 }
