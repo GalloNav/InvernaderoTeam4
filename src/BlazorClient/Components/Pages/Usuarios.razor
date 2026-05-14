@@ -8,7 +8,7 @@
 <PageTitle>Gestión de Usuarios y Notificaciones</PageTitle>
 
 <div class="container mt-4">
-    <h2>👥 Usuarios y Preferencias de Notificación</h2>
+    <h2>Usuarios y Preferencias de Notificación</h2>
     <p class="lead">Página exclusiva para <strong>Administradores</strong>.</p>
 
     <div class="alert alert-info">
@@ -33,7 +33,7 @@
             }
             else
             {
-                <span>🔄 Refrescar</span>
+                <span>Refrescar</span>
             }
         </button>
     </div>
@@ -79,10 +79,10 @@
                             <small class="text-muted">ID: @u.Id</small>
                         </div>
                         <div class="card-body">
-                            <p class="mb-1"><strong>📧 Email:</strong> @u.Email</p>
-                            <p class="mb-1"><strong>📱 Teléfono:</strong> @u.Telefono</p>
+                            <p class="mb-1"><strong>Email:</strong> @u.Email</p>
+                            <p class="mb-1"><strong>Teléfono:</strong> @u.Telefono</p>
                             <p class="mb-1">
-                                <strong>🔔 Push Token:</strong>
+                                <strong>Push Token:</strong>
                                 <code class="text-muted small">@u.PushToken</code>
                             </p>
                             <p class="mb-3 text-muted small">
@@ -99,7 +99,7 @@
                                 }
                                 else
                                 {
-                                    <span>🔔 Ver preferencias de notificación</span>
+                                    <span>Ver preferencias de notificación</span>
                                 }
                             </button>
 
@@ -122,15 +122,8 @@
                                                 "Push" => "bg-primary",
                                                 _ => "bg-secondary"
                                             };
-                                            var canalIcon = canal switch
-                                            {
-                                                "Email" => "📧",
-                                                "SMS" => "💬",
-                                                "Push" => "🔔",
-                                                _ => "•"
-                                            };
                                             <span class="badge @canalClass me-1">
-                                                @canalIcon @canal
+                                                @canal
                                             </span>
                                         }
                                     }

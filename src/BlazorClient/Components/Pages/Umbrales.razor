@@ -8,7 +8,7 @@
 <PageTitle>Configuración de Umbrales</PageTitle>
 
 <div class="container mt-4">
-    <h2>⚙️ Configuración de Umbrales</h2>
+    <h2>Configuración de Umbrales</h2>
     <p class="lead">Página para <strong>Administradores</strong> y <strong>Operadores</strong>.</p>
 
     <div class="alert alert-info">
@@ -35,26 +35,26 @@
     {
         <div class="card">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">🌱 Invernadero @umbral.InvernaderoId</h5>
+                <h5 class="mb-0">Invernadero @umbral.InvernaderoId</h5>
             </div>
             <div class="card-body">
 
                 @if (mensajeExito != null)
                 {
                     <div class="alert alert-success">
-                        ✅ @mensajeExito
+                        @mensajeExito
                     </div>
                 }
                 @if (mensajeError != null)
                 {
                     <div class="alert alert-danger">
-                        ❌ @mensajeError
+                        @mensajeError
                     </div>
                 }
 
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <h6 class="text-danger">🌡️ Temperatura</h6>
+                        <h6 class="text-danger">Temperatura</h6>
                         <div class="mb-3">
                             <label class="form-label">Mínima (°C)</label>
                             <input type="number" class="form-control" step="0.5"
@@ -73,7 +73,7 @@
                     </div>
 
                     <div class="col-md-6">
-                        <h6 class="text-info">💧 Humedad</h6>
+                        <h6 class="text-info">Humedad</h6>
                         <div class="mb-3">
                             <label class="form-label">Mínima (%)</label>
                             <input type="number" class="form-control" step="1" min="0" max="100"
@@ -97,7 +97,7 @@
                 @if (ValidationError != null)
                 {
                     <div class="alert alert-warning">
-                        ⚠️ <strong>@ValidationError</strong>
+                        <strong>@ValidationError</strong>
                     </div>
                 }
 
@@ -112,13 +112,13 @@
                         }
                         else
                         {
-                            <span>💾 Guardar cambios</span>
+                            <span>Guardar cambios</span>
                         }
                     </button>
                     <button class="btn btn-outline-secondary"
                             @onclick="CargarUmbrales"
                             disabled="@guardando">
-                        🔄 Recargar
+                        Recargar
                     </button>
                 </div>
 

@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using MS5.SensoresUsuarios.Auth;
 using MS5.SensoresUsuarios.Datos;
 using Serilog;
 using System.Security.Claims;
@@ -28,11 +27,6 @@ try
     // EF Core
     builder.Services.AddDbContext<SensoresUsuariosDbContext>(opt =>
         opt.UseSqlServer(builder.Configuration.GetConnectionString("SensoresUsuarios")));
-
-    // Auth config
-    builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
-    builder.Services.Configure<UsuariosMockOptions>(builder.Configuration.GetSection("UsuariosMock"));
-    builder.Services.AddSingleton<JwtTokenService>();
 
     // JWT Bearer (Keycloak RS256/JWKS)
     builder.Services

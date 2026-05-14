@@ -8,7 +8,7 @@
 <PageTitle>Gestión de Invernaderos</PageTitle>
 
 <div class="container mt-4">
-    <h2>🏗️ Gestión de Invernaderos</h2>
+    <h2>Gestión de Invernaderos</h2>
     <p class="lead">Página exclusiva para <strong>Administradores</strong>.</p>
 
     <div class="alert alert-info">
@@ -19,7 +19,7 @@
     <!-- Botón crear -->
     <div class="mb-3">
         <button class="btn btn-success" @onclick="MostrarFormularioCrear" disabled="@cargando">
-            ➕ Nuevo invernadero
+            Nuevo invernadero
         </button>
         <button class="btn btn-outline-secondary ms-2" @onclick="CargarInvernaderos" disabled="@cargando">
             @if (cargando)
@@ -29,7 +29,7 @@
             }
             else
             {
-                <span>🔄 Refrescar</span>
+                <span>Refrescar</span>
             }
         </button>
     </div>
@@ -38,14 +38,14 @@
     @if (mensajeExito != null)
     {
         <div class="alert alert-success alert-dismissible">
-            ✅ @mensajeExito
+            @mensajeExito
             <button type="button" class="btn-close" @onclick="() => mensajeExito = null"></button>
         </div>
     }
     @if (mensajeError != null)
     {
         <div class="alert alert-danger alert-dismissible">
-            ❌ @mensajeError
+            @mensajeError
             <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
         </div>
     }
@@ -86,7 +86,7 @@
                 @if (ValidacionFormulario != null)
                 {
                     <div class="alert alert-warning mt-3 mb-0">
-                        ⚠️ @ValidacionFormulario
+                        @ValidacionFormulario
                     </div>
                 }
 
@@ -101,7 +101,7 @@
                         }
                         else
                         {
-                            <span>💾 Guardar</span>
+                            <span>Guardar</span>
                         }
                     </button>
                     <button class="btn btn-outline-secondary"
@@ -164,7 +164,7 @@
                                     <button class="btn btn-sm btn-outline-danger"
                                             disabled
                                             title="DELETE no implementado en el Gateway — trabajo futuro">
-                                        🗑️ Eliminar
+                                        Eliminar
                                     </button>
                                 </td>
                             </tr>

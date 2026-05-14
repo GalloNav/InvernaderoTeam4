@@ -8,16 +8,16 @@
 <PageTitle>Información de Sensores</PageTitle>
 
 <div class="container mt-4">
-    <h2>🔧 Información de Sensores</h2>
+    <h2>Información de Sensores</h2>
     <p class="lead">Página para <strong>Administradores</strong> y <strong>Técnicos</strong>.</p>
 
     <div class="alert alert-info">
         <h5>Información disponible:</h5>
         <ul class="mb-0">
-            <li>✅ Listado de sensores con marca y tipo</li>
-            <li>✅ Estado de cada sensor (Activo / Inactivo)</li>
-            <li>✅ Invernadero al que está asignado</li>
-            <li>✅ Fecha de registro en el sistema</li>
+            <li>Listado de sensores con marca y tipo</li>
+            <li>Estado de cada sensor (Activo / Inactivo)</li>
+            <li>Invernadero al que está asignado</li>
+            <li>Fecha de registro en el sistema</li>
         </ul>
     </div>
 
@@ -35,7 +35,7 @@
                     }
                     else
                     {
-                        <span>🔄 Refrescar</span>
+                        <span>Refrescar</span>
                     }
                 </button>
             </div>
@@ -87,9 +87,9 @@
                                     @{
                                         var tipoText = (s.TipoSensor?.ToLower()) switch
                                         {
-                                            "temperatura" => "🌡️ Temperatura",
-                                            "humedad" => "💧 Humedad",
-                                            "ambos" => "🌡️💧 Ambos",
+                                            "temperatura" => "Temperatura",
+                                            "humedad" => "Humedad",
+                                            "ambos" => "Ambos",
                                             _ => s.TipoSensor ?? "N/A"
                                         };
                                     }
@@ -99,11 +99,11 @@
                                 <td>
                                     @if (s.Activo)
                                     {
-                                        <span class="badge bg-success">● Activo</span>
+                                        <span class="badge bg-success">Activo</span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary">● Inactivo</span>
+                                        <span class="badge bg-secondary">Inactivo</span>
                                     }
                                 </td>
                                 <td>
