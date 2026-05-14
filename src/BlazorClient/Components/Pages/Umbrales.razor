@@ -1,6 +1,9 @@
 @page "/umbrales"
 @attribute [Authorize(Roles = "Admin,Operador")]
-@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode())
+@using BlazorClient.Models
+@using BlazorClient.Services
+@inject IApiClient ApiClient
 
 <PageTitle>Configuración de Umbrales</PageTitle>
 
@@ -9,38 +12,202 @@
     <p class="lead">Página para <strong>Administradores</strong> y <strong>Operadores</strong>.</p>
 
     <div class="alert alert-info">
-        <h5>Permisos requeridos:</h5>
-        <ul class="mb-0">
-            <li>✅ Ver umbrales por invernadero y por sensor</li>
-            <li>✅ Ajustar umbrales de temperatura y humedad</li>
-            <li>✅ Resetear umbrales a valores predeterminados</li>
-        </ul>
+        <strong>Función:</strong> ajustar los rangos de temperatura y humedad que disparan
+        alarmas en el invernadero. Cuando una medición sale del rango, el sistema genera
+        una alarma automáticamente y notifica a los usuarios suscritos.
     </div>
 
-    <div class="card">
-        <div class="card-body">
-            <h5>Umbrales actuales</h5>
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Sensor</th>
-                        <th>Temp. máxima (°C)</th>
-                        <th>Humedad máxima (%)</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Sensor 1</td>
-                        <td>30.0</td>
-                        <td>85.0</td>
-                        <td><button class="btn btn-sm btn-outline-primary" disabled>Editar</button></td>
-                    </tr>
-                </tbody>
-            </table>
-            <p class="text-muted">
-                <small>Funcionalidad de edición pendiente de implementación.</small>
-            </p>
+    @if (cargando && umbral is null)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Cargando umbrales...</p>
         </div>
-    </div>
+    }
+    else if (error != null && umbral is null)
+    {
+        <div class="alert alert-danger">
+            <strong>Error al cargar:</strong> @error
+            <button class="btn btn-sm btn-outline-danger ms-2" @onclick="CargarUmbrales">Reintentar</button>
+        </div>
+    }
+    else if (umbral != null)
+    {
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">🌱 Invernadero @umbral.InvernaderoId</h5>
+            </div>
+            <div class="card-body">
+
+                @if (mensajeExito != null)
+                {
+                    <div class="alert alert-success">
+                        ✅ @mensajeExito
+                    </div>
+                }
+                @if (mensajeError != null)
+                {
+                    <div class="alert alert-danger">
+                        ❌ @mensajeError
+                    </div>
+                }
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <h6 class="text-danger">🌡️ Temperatura</h6>
+                        <div class="mb-3">
+                            <label class="form-label">Mínima (°C)</label>
+                            <input type="number" class="form-control" step="0.5"
+                                   @bind="umbral.TempMin" @bind:event="oninput"
+                                   disabled="@guardando" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Máxima (°C)</label>
+                            <input type="number" class="form-control" step="0.5"
+                                   @bind="umbral.TempMax" @bind:event="oninput"
+                                   disabled="@guardando" />
+                        </div>
+                        <div class="text-muted small">
+                            Rango configurado: <strong>@umbral.TempMin°C — @umbral.TempMax°C</strong>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6 class="text-info">💧 Humedad</h6>
+                        <div class="mb-3">
+                            <label class="form-label">Mínima (%)</label>
+                            <input type="number" class="form-control" step="1" min="0" max="100"
+                                   @bind="umbral.HumMin" @bind:event="oninput"
+                                   disabled="@guardando" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Máxima (%)</label>
+                            <input type="number" class="form-control" step="1" min="0" max="100"
+                                   @bind="umbral.HumMax" @bind:event="oninput"
+                                   disabled="@guardando" />
+                        </div>
+                        <div class="text-muted small">
+                            Rango configurado: <strong>@umbral.HumMin% — @umbral.HumMax%</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4" />
+
+                @if (ValidationError != null)
+                {
+                    <div class="alert alert-warning">
+                        ⚠️ <strong>@ValidationError</strong>
+                    </div>
+                }
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success"
+                            @onclick="GuardarUmbral"
+                            disabled="@(guardando || ValidationError != null)">
+                        @if (guardando)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                            <span>Guardando...</span>
+                        }
+                        else
+                        {
+                            <span>💾 Guardar cambios</span>
+                        }
+                    </button>
+                    <button class="btn btn-outline-secondary"
+                            @onclick="CargarUmbrales"
+                            disabled="@guardando">
+                        🔄 Recargar
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    }
 </div>
+
+@code {
+    private const string InvernaderoId = "INV-001";
+
+    private UmbralDto? umbral;
+    private bool cargando = false;
+    private bool guardando = false;
+    private string? error = null;
+    private string? mensajeExito = null;
+    private string? mensajeError = null;
+
+    private string? ValidationError
+    {
+        get
+        {
+            if (umbral is null) return null;
+            if (umbral.TempMin >= umbral.TempMax)
+                return "La temperatura mínima debe ser menor que la máxima.";
+            if (umbral.HumMin >= umbral.HumMax)
+                return "La humedad mínima debe ser menor que la máxima.";
+            if (umbral.HumMin < 0 || umbral.HumMax > 100)
+                return "La humedad debe estar entre 0% y 100%.";
+            return null;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarUmbrales();
+    }
+
+    private async Task CargarUmbrales()
+    {
+        cargando = true;
+        error = null;
+        mensajeExito = null;
+        mensajeError = null;
+        StateHasChanged();
+
+        try
+        {
+            umbral = await ApiClient.GetUmbralInvernaderoAsync(InvernaderoId);
+            if (umbral is null)
+                error = "No se pudo obtener el umbral del invernadero.";
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            umbral = null;
+        }
+        finally
+        {
+            cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task GuardarUmbral()
+    {
+        if (umbral is null || ValidationError != null) return;
+
+        guardando = true;
+        mensajeExito = null;
+        mensajeError = null;
+        StateHasChanged();
+
+        try
+        {
+            var ok = await ApiClient.PutUmbralInvernaderoAsync(InvernaderoId, umbral);
+            if (ok)
+                mensajeExito = $"Umbrales actualizados correctamente para {InvernaderoId}.";
+            else
+                mensajeError = "El servidor rechazó la actualización (revisa permisos o valores).";
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error de red: {ex.Message}";
+        }
+        finally
+        {
+            guardando = false;
+            StateHasChanged();
+        }
+    }
+}

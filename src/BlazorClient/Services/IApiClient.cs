@@ -6,4 +6,6 @@ public interface IApiClient
 {
     Task<List<MedicionDto>> GetMedicionesAsync();
     Task<List<SensorDto>> GetSensoresAsync();
+    Task<UmbralDto?> GetUmbralInvernaderoAsync(string invernaderoId);
+    Task<bool> PutUmbralInvernaderoAsync(string invernaderoId, UmbralDto umbral);
 }
