@@ -8,4 +8,6 @@ public interface IApiClient
     Task<List<SensorDto>> GetSensoresAsync();
     Task<UmbralDto?> GetUmbralInvernaderoAsync(string invernaderoId);
     Task<bool> PutUmbralInvernaderoAsync(string invernaderoId, UmbralDto umbral);
+    Task<List<InvernaderoDto>> GetInvernaderosAsync();
+    Task<bool> PostInvernaderoAsync(InvernaderoDto invernadero);
 }
